@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAIR 框架動態展示</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --border-color: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-secondary: #8b5cf6;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            
+            --mechanism1-color: rgba(59, 130, 246, 0.1);
+            --mechanism1-border: rgba(59, 130, 246, 0.5);
+            --mechanism2-color: rgba(139, 92, 246, 0.1);
+            --mechanism2-border: rgba(139, 92, 246, 0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        h1 { font-size: 2rem; font-weight: 600; margin-bottom: 0.5rem; text-align: center; }
+        .subtitle { color: var(--text-secondary); margin-bottom: 2rem; text-align: center; font-size: 1.1rem; }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            z-index: 100;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        button:hover { background: rgba(255, 255, 255, 0.1); }
+        button.primary { background: var(--accent-primary); color: white; border: none; }
+        button.primary:hover { background: #2563eb; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .diagram-container {
+            width: 100%;
+            max-width: 1100px;
+            position: relative;
+            padding-bottom: 4rem;
+        }
+
+        /* Base Box Styles */
+        .box {
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            position: relative;
+            opacity: 0.1; /* Start dimmed */
+            transition: all 0.8s ease-in-out;
+            border: 2px solid transparent;
+            background: var(--surface-color);
+        }
+        
+        .box.active {
+            opacity: 1;
+        }
+
+        .box.highlight {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            transform: scale(1.02);
+            z-index: 10;
+        }
+
+        .box-title {
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        /* Mechanism 1 */
+        .mechanism1 {
+            border: 2px dashed var(--mechanism1-border);
+            padding: 2rem;
+            margin-bottom: 3rem;
+            background: var(--mechanism1-color);
+        }
+
+        .m1-title {
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .m1-subtitle {
+            text-align: center;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        /* Interaction Arena */
+        .arena {
+            position: relative;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            padding: 3rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 2rem 0;
+            background: rgba(0,0,0,0.2);
+            opacity: 0.1;
+            transition: all 0.8s;
+        }
+
+        .arena.active { opacity: 1; border-color: rgba(255, 255, 255, 0.2); }
+
+        /* Pipeline */
+        .pipeline {
+            border: 2px solid var(--border-color);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            background: var(--bg-color);
+            width: 80%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 5;
+        }
+
+        .pipeline-stage {
+            border: 1px dashed var(--text-secondary);
+            padding: 1rem;
+            text-align: center;
+            background: var(--surface-color);
+            flex: 1;
+            transition: all 0.5s;
+        }
+
+        .pipeline-stage.highlight {
+            border-color: var(--accent-primary);
+            border-style: solid;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .arrow-right {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            font-weight: 900;
+        }
+
+        /* Agents */
+        .agent-node {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            width: 180px;
+            text-align: center;
+            position: absolute;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            opacity: 0.1;
+            transition: all 0.5s;
+        }
+
+        .agent-node strong { display: block; font-size: 1rem; margin-bottom: 0.25rem; }
+        
+        .agent-node.active { opacity: 1; }
+        
+        .agent-node.highlight-ai {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        
+        .agent-node.highlight-human {
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        /* Positions */
+        #agent-ai-monitor { top: -20px; left: -20px; }
+        #agent-human-context { top: -20px; right: -20px; }
+        #agent-ai-generate { bottom: -20px; left: -20px; }
+        #agent-human-approve { bottom: -20px; right: -20px; }
+
+        /* Flow Labels & Arrows */
+        .flow-label {
+            position: absolute;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            opacity: 0;
+            transition: all 0.5s;
+            text-align: center;
+            width: 100%;
+        }
+
+        .flow-label.active {
+            opacity: 1;
+            color: var(--text-primary);
+        }
+
+        .flow-label.highlight-surfacing { color: var(--warning); text-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+        .flow-label.highlight-resolving { color: var(--success); text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+
+        .flow-surfacing { top: -1.5rem; left: 0; text-shadow: 0px 4px 6px var(--bg-color); z-index: 20; }
+        .flow-resolving { bottom: -0.5rem; left: 0; text-shadow: 0px 4px 6px var(--bg-color); z-index: 20; }
+
+        .curved-arrow {
+            position: absolute;
+            opacity: 0;
+            transition: opacity 0.5s;
+            width: 150px;
+            height: 50px;
+        }
+        
+        .curved-arrow.active { opacity: 0.5; }
+        .curved-arrow.running { 
+            opacity: 1; 
+            animation: dash 2s linear forwards;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* SVG definitions for curved lines */
+        .svg-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .path-line {
+            fill: none;
+            stroke: var(--text-secondary);
+            stroke-width: 3;
+            stroke-dasharray: 10, 5;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .path-line.active { opacity: 0.3; }
+        .path-line.running-surfacing {
+            opacity: 1;
+            stroke: var(--warning);
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawLine 1.5s forwards ease-in-out;
+        }
+        .path-line.running-resolving {
+            opacity: 1;
+            stroke: var(--success);
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawLine 1.5s forwards ease-in-out;
+        }
+
+        @keyframes drawLine {
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* Protocol Box */
+        .protocol-box {
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            padding: 1rem;
+            text-align: center;
+            width: 70%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 5;
+            margin-top: -1.5rem;
+        }
+
+        .protocol-box.highlight {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Mechanism 2 */
+        .mechanism2 {
+            border: 2px solid var(--mechanism2-border);
+            padding: 2rem;
+            background: var(--mechanism2-color);
+        }
+
+        .m2-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .m2-col {
+            text-align: center;
+        }
+        .m2-col h4 { margin-bottom: 0.5rem; color: var(--text-primary); }
+        .m2-col p { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
+
+        /* Connection Arrow M2 to Protocol */
+        .m2-arrow {
+            text-align: center;
+            font-size: 3rem;
+            color: var(--text-secondary);
+            line-height: 0.5;
+            margin-bottom: 0.5rem;
+            opacity: 0.1;
+            transition: all 0.5s;
+        }
+        .m2-arrow.active { opacity: 1; color: var(--accent-secondary); transform: translateY(-10px); }
+
+        /* Explanation Panel */
+        .explanation-panel {
+            background: rgba(0,0,0,0.5);
+            border-left: 4px solid var(--accent-primary);
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+            min-height: 100px;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+
+        .step-indicator {
+            font-size: 0.85rem;
+            color: var(--accent-primary);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>FAIR 雙機制社會技術設計展示</h1>
+    <div class="subtitle">(Figure 1: FAIR's Dual-Mechanism Sociotechnical Design)</div>
+
+    <div class="controls">
+        <button id="btn-prev" onclick="prevStep()" disabled>上一步</button>
+        <button id="btn-play" class="primary" onclick="togglePlay()">自動播放 ▶</button>
+        <button id="btn-next" onclick="nextStep()" class="primary">下一步</button>
+        <button id="btn-reset" onclick="resetAnimation()">重設</button>
+    </div>
+
+    <div class="diagram-container">
+        
+        <svg class="svg-container">
+            <!-- Surfacing Curve -->
+            <path id="path-surfacing" class="path-line" d="M 150,150 Q 550,0 950,150"></path>
+            <!-- Resolving Curve -->
+            <path id="path-resolving" class="path-line" d="M 950,250 Q 550,400 150,250"></path>
+        </svg>
+
+        <!-- Mechanism 1 -->
+        <div class="box mechanism1" id="mech1">
+            <div class="m1-title">機制一 (Mechanism 1)</div>
+            <div class="m1-subtitle">Level: AI Artifact for a Decision Task<br>Meta-Design: Human-AI Agent Collaboration for Artifact Adaptation</div>
+
+            <div class="arena" id="arena">
+                
+                <div class="flow-label flow-surfacing" id="label-surfacing">
+                    <span style="font-size: 1.5rem; vertical-align: middle;">➔</span> 浮現張力 (Surfacing Tensions)
+                </div>
+
+                <!-- Pipeline -->
+                <div class="box pipeline" id="pipeline">
+                    <div style="position: absolute; top: -2rem; background: var(--bg-color); padding: 0 10px; font-weight: bold; color: var(--text-primary); font-size: 0.9rem;">
+                        AI 人造物分層管線 (AI Artifact Layered Pipeline)
+                    </div>
+                    
+                    <div class="pipeline-stage" id="stage-rep">
+                        <strong>Representation</strong><br>(Data)
+                    </div>
+                    <div class="arrow-right">➔</div>
+                    <div class="pipeline-stage" id="stage-learn">
+                        <strong>Learning</strong><br>(Model)
+                    </div>
+                    <div class="arrow-right">➔</div>
+                    <div class="pipeline-stage" id="stage-calib">
+                        <strong>Calibration</strong><br>(Decision)
+                    </div>
+                </div>
+
+                <div class="flow-label flow-resolving" id="label-resolving">
+                    解決張力 (Resolving Tensions) <span style="font-size: 1.5rem; vertical-align: middle; display: inline-block; transform: scaleX(-1);">➔</span>
+                </div>
+
+                <!-- Agents -->
+                <div class="agent-node" id="agent-ai-monitor">
+                    <strong>AI agents</strong>Monitor & Analyze
+                </div>
+                <div class="agent-node" id="agent-human-context">
+                    <strong>Human agents</strong>Contextualize & Validate
+                </div>
+                <div class="agent-node" id="agent-ai-generate">
+                    <strong>AI agents</strong>Generate & Refine
+                </div>
+                <div class="agent-node" id="agent-human-approve">
+                    <strong>Human agents</strong>Adjudicate & Approve
+                </div>
+            </div>
+
+            <!-- Protocol -->
+            <div class="box protocol-box" id="protocol">
+                <strong>Decision-Task-Specific Federated Governance Protocol</strong><br>
+                <span style="font-size: 0.85rem; color: var(--text-secondary);">Configures adaptive cycles (Surfacing & Resolving) & AI agent autonomy parameters</span>
+            </div>
+        </div>
+
+        <div class="m2-arrow" id="m2-arrow">⬆</div>
+
+        <!-- Mechanism 2 -->
+        <div class="box mechanism2" id="mech2">
+            <div class="m1-title">機制二 (Mechanism 2)</div>
+            <div class="m1-subtitle">Level: Decision-Task Portfolio<br>Risk-Tiered Federated Governance of Human-AI Agent Collaboration</div>
+
+            <div class="m2-grid">
+                <div class="m2-col">
+                    <h4>Governance Activity</h4>
+                    <p><strong>Process Negotiation:</strong> Balancing portfolio coherence & decision-task flexibility</p>
+                    <p><strong>Control-Risk Calibration:</strong> Aligning control with task risk</p>
+                </div>
+                <div class="m2-col">
+                    <h4>Fairness Complement</h4>
+                    <p><strong>Human Skills:</strong> Capability to work with AI agents promotes flexibility</p>
+                    <p><strong>Structured Stakeholder Feedback:</strong> Fairness experiences inform risk-tiering of decision tasks</p>
+                </div>
+                <div class="m2-col">
+                    <h4>Protocol Design</h4>
+                    <p><strong>Adaptive-cycle Configuration:</strong> Standards & configurable choices</p>
+                    <p><strong>AI agent Autonomy Level:</strong> AI autonomy vs. human control</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explanation Text -->
+        <div class="explanation-panel">
+            <div class="step-indicator" id="step-indicator">Step 0 / 6</div>
+            <div id="explanation-text">點擊上方「下一步」或「自動播放」開始觀看 FAIR 框架流程動畫解說。</div>
+        </div>
+
+    </div>
+
+    <script>
+        const steps = [
+            {
+                title: "準備就緒：急診室分診系統 (ED Triage) 案例",
+                desc: "點擊上方「下一步」或「自動播放」開始觀看 FAIR 框架如何解決**急診室分診 AI 的潛在偏見**。在這個案例中，我們探討一個會低估非裔（或特定弱勢群體）健康風險的演算法。",
+                action: () => {}
+            },
+            {
+                title: "核心 AI 管線 (AI Pipeline)",
+                desc: "醫院導入了分診 AI。這包含：【資料表徵 (Data)】(使用過去的醫療花費作為健康指標)、【模型學習 (Model)】(預測未來的醫療需求) 與【決策校準 (Decision)】(決定誰優先看診，如前 10% 高風險族群)。",
+                action: () => {
+                    document.getElementById('mech1').classList.add('active');
+                    document.getElementById('arena').classList.add('active');
+                    document.getElementById('pipeline').classList.add('active');
+                    document.getElementById('stage-rep').classList.add('highlight');
+                    setTimeout(() => document.getElementById('stage-learn').classList.add('highlight'), 300);
+                    setTimeout(() => document.getElementById('stage-calib').classList.add('highlight'), 600);
+                }
+            },
+            {
+                title: "浮現張力 (Surfacing Tensions)",
+                desc: "AI 代理持續【監控與分析】。它發現了「張力 (Tension)」：在相同醫療花費下，弱勢群體實際上病得更重 (Proxy Bias)。這份警報隨著數據被「浮現 (Surfacing)」給急診室的醫療主管 (人類代理) 進行【脈絡化與驗證】。",
+                action: () => {
+                    document.getElementById('agent-ai-monitor').classList.add('active');
+                    document.getElementById('agent-human-context').classList.add('active');
+                    document.getElementById('label-surfacing').classList.add('active');
+                    document.getElementById('path-surfacing').classList.add('active');
+
+                    // Animation highlights
+                    document.getElementById('agent-ai-monitor').classList.add('highlight-ai');
+                    document.getElementById('path-surfacing').classList.add('running-surfacing');
+                    document.getElementById('label-surfacing').classList.add('highlight-surfacing');
+                    setTimeout(() => {
+                        document.getElementById('agent-human-context').classList.add('highlight-human');
+                    }, 1500);
+                }
+            },
+            {
+                title: "解決張力 (Resolving Tensions)",
+                desc: "醫療主管確認這是不公平的。AI 代理隨即【生成與改良】解決方案：建議在「決策校準 (Calibration)」層級，將弱勢群體的優先看診閾值降低。這個修正建議傳回給醫療主管進行最終的【裁決與核准 (Approve)】。",
+                action: () => {
+                    // Reset previous highlights
+                    document.getElementById('agent-ai-monitor').classList.remove('highlight-ai');
+                    document.getElementById('agent-human-context').classList.remove('highlight-human');
+                    document.getElementById('label-surfacing').classList.remove('highlight-surfacing');
+                    
+                    // Activate new elements
+                    document.getElementById('agent-ai-generate').classList.add('active');
+                    document.getElementById('agent-human-approve').classList.add('active');
+                    document.getElementById('label-resolving').classList.add('active');
+                    document.getElementById('path-resolving').classList.add('active');
+
+                    // Animate
+                    document.getElementById('agent-ai-generate').classList.add('highlight-ai');
+                    document.getElementById('path-resolving').classList.add('running-resolving');
+                    document.getElementById('label-resolving').classList.add('highlight-resolving');
+                    setTimeout(() => {
+                        document.getElementById('agent-human-approve').classList.add('highlight-human');
+                    }, 1500);
+                }
+            },
+            {
+                title: "任務專屬治理協議 (Decision-Task Protocol)",
+                desc: "在這個急診分診 (高風險) 的情境下，醫院的「任務專屬治理協議」規定：AI 無權自動更改分診標準。所有的閾值調整（如前一步驟的方案）都**必須經過人類主管絕對核准** (High Human Control / Low AI Autonomy)。",
+                action: () => {
+                    // Reset highlights
+                    document.getElementById('agent-ai-generate').classList.remove('highlight-ai');
+                    document.getElementById('agent-human-approve').classList.remove('highlight-human');
+                    document.getElementById('label-resolving').classList.remove('highlight-resolving');
+
+                    document.getElementById('protocol').classList.add('active');
+                    document.getElementById('protocol').classList.add('highlight');
+                }
+            },
+            {
+                title: "組織層級風險分級治理 (Mechanism 2: Portfolio Governance)",
+                desc: "為什麼急診系統的 AI 權限這麼低？因為機制二 (宏觀治理) 規定了這屬於「關乎生死的高風險任務 (High Stakes)」。相對地，如果是「排班系統」這種低風險任務，機制二就會賦予 AI 代理更高的自主權威，以保持彈性。",
+                action: () => {
+                    document.getElementById('protocol').classList.remove('highlight');
+                    
+                    document.getElementById('mech2').classList.add('active');
+                    document.getElementById('m2-arrow').classList.add('active');
+                    document.getElementById('mech2').classList.add('highlight');
+                    setTimeout(() => document.getElementById('mech2').classList.remove('highlight'), 2000);
+                }
+            },
+            {
+                title: "雙機制社會技術循環 (Complete Cycle)",
+                desc: "這就是 FAIR 的價值：不只是單次修復演算法，而是建立一個系統。由機制二設定安全框架，確保在如同「急診室分診」這般高度動態的現實中，AI 與人類能持續協作，及時發現並修復不公平的張力。",
+                action: () => {
+                    // Show everything bright
+                    document.querySelectorAll('.box, .arena, .agent-node, .pipeline, .flow-label, .path-line, .m2-arrow').forEach(el => el.classList.add('active'));
+                    document.getElementById('stage-rep').classList.add('highlight');
+                    document.getElementById('stage-learn').classList.add('highlight');
+                    document.getElementById('stage-calib').classList.add('highlight');
+                    document.getElementById('agent-human-approve').classList.add('highlight-human');
+                    document.getElementById('agent-human-context').classList.add('highlight-human');
+                }
+            }
+        ];
+
+        let currentStep = 0;
+        let isPlaying = false;
+        let playInterval;
+
+        function updateUI() {
+            document.getElementById('step-indicator').innerText = `Step ${currentStep} / ${steps.length - 1}: ${steps[currentStep].title}`;
+            document.getElementById('explanation-text').innerHTML = steps[currentStep].desc;
+            
+            document.getElementById('btn-prev').disabled = currentStep === 0;
+            document.getElementById('btn-next').disabled = currentStep === steps.length - 1;
+
+            if(currentStep === steps.length - 1) {
+                stopAutoPlay();
+            }
+        }
+
+        // Extremely rough cleanup function before re-applying classes
+        function resetClasses() {
+            document.querySelectorAll('.active, .highlight, .highlight-ai, .highlight-human, .running-surfacing, .running-resolving, .highlight-surfacing, .highlight-resolving').forEach(el => {
+                el.classList.remove('active', 'highlight', 'highlight-ai', 'highlight-human', 'running-surfacing', 'running-resolving', 'highlight-surfacing', 'highlight-resolving');
+            });
+        }
+
+        function forceRunStep(targetStep) {
+            resetClasses();
+            // To get to target step, we quickly run all actions up to target step
+            for(let i = 1; i <= targetStep; i++) {
+                // Remove animations for instant state setup, wait we can't easily cancel setTimeouts in this simple script.
+                // We'll just run them. For a perfect slider, we'd need exact state management.
+            }
+            // Actually, best way without complex state is just to reload the page state visually
+            drawState(targetStep);
+        }
+
+        function drawState(stepIdx) {
+            resetClasses();
+            
+            if(stepIdx >= 1) {
+                document.getElementById('mech1').classList.add('active');
+                document.getElementById('arena').classList.add('active');
+                document.getElementById('pipeline').classList.add('active');
+                document.getElementById('stage-rep').classList.add('highlight');
+                document.getElementById('stage-learn').classList.add('highlight');
+                document.getElementById('stage-calib').classList.add('highlight');
+            }
+            if(stepIdx >= 2) {
+                document.getElementById('agent-ai-monitor').classList.add('active');
+                document.getElementById('agent-human-context').classList.add('active');
+                document.getElementById('label-surfacing').classList.add('active');
+                document.getElementById('path-surfacing').classList.add('active');
+                if(stepIdx === 2) {
+                    document.getElementById('agent-ai-monitor').classList.add('highlight-ai');
+                    document.getElementById('path-surfacing').classList.add('running-surfacing');
+                    document.getElementById('label-surfacing').classList.add('highlight-surfacing');
+                    setTimeout(() => document.getElementById('agent-human-context').classList.add('highlight-human'), 1500);
+                }
+            }
+            if(stepIdx >= 3) {
+                document.getElementById('agent-ai-generate').classList.add('active');
+                document.getElementById('agent-human-approve').classList.add('active');
+                document.getElementById('label-resolving').classList.add('active');
+                document.getElementById('path-resolving').classList.add('active');
+                
+                if(stepIdx === 3) {
+                     document.getElementById('agent-ai-generate').classList.add('highlight-ai');
+                     document.getElementById('path-resolving').classList.add('running-resolving');
+                     document.getElementById('label-resolving').classList.add('highlight-resolving');
+                     setTimeout(() => document.getElementById('agent-human-approve').classList.add('highlight-human'), 1500);
+                }
+            }
+            if(stepIdx >= 4) {
+                document.getElementById('protocol').classList.add('active');
+                if(stepIdx === 4) document.getElementById('protocol').classList.add('highlight');
+            }
+            if(stepIdx >= 5) {
+                document.getElementById('mech2').classList.add('active');
+                document.getElementById('m2-arrow').classList.add('active');
+                if(stepIdx === 5) {
+                    document.getElementById('mech2').classList.add('highlight');
+                    setTimeout(() => document.getElementById('mech2').classList.remove('highlight'), 2000);
+                }
+            }
+            if(stepIdx === 6) {
+                steps[6].action();
+            }
+        }
+
+        function nextStep() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                drawState(currentStep);
+                updateUI();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                drawState(currentStep);
+                updateUI();
+            }
+        }
+
+        function resetAnimation() {
+            stopAutoPlay();
+            currentStep = 0;
+            drawState(0);
+            updateUI();
+        }
+
+        function togglePlay() {
+            if (isPlaying) {
+                stopAutoPlay();
+            } else {
+                if(currentStep === steps.length - 1) resetAnimation();
+                isPlaying = true;
+                document.getElementById('btn-play').innerText = "暫停 ⏸";
+                nextStep(); // Do first step immediately
+                playInterval = setInterval(() => {
+                    nextStep();
+                }, 4000); // Wait 4s between steps
+            }
+        }
+
+        function stopAutoPlay() {
+            isPlaying = false;
+            document.getElementById('btn-play').innerText = "自動播放 ▶";
+            clearInterval(playInterval);
+        }
+
+        // Initialize UI
+        updateUI();
+
+    </script>
+</body>
+</html>
