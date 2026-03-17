@@ -6,7 +6,7 @@ services:
     image: nginx:alpine
     container_name: fair-web
     ports:
-      - "8080:80"  # 將伺服器的 8080 port 映射到容器內的 80 port，可依需求修改
+      - "8089:80"  # 將伺服器的 8089 port 映射到容器內的 80 port，可依需求修改
     volumes:
       - .:/usr/share/nginx/html:ro  # 將目前目錄的檔案掛載到 Nginx 預設網頁目錄
     restart: always
