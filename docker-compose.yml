@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  # 1. 網頁伺服器：負責對外提供您的 index.html 動態展示頁面
+  web:
+    image: nginx:alpine
+    container_name: fair-web
+    ports:
+      - "8080:80"  # 將伺服器的 8080 port 映射到容器內的 80 port，可依需求修改
+    volumes:
+      - .:/usr/share/nginx/html:ro  # 將目前目錄的檔案掛載到 Nginx 預設網頁目錄
+    restart: always
+
+  # 2. Python 執行環境 (可選)：包含 Python 3.11 及相依套件，方便您在伺服器上執行 python 腳本
+  python-env:
+    image: python:3.11-slim
+    container_name: fair-python
+    volumes:
+      - .:/app
+    working_dir: /app
+    # 使容器保持持續運行狀態，不會自動退出
+    command: tail -f /dev/null
+    restart: always
